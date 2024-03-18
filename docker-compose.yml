@@ -1,0 +1,67 @@
+version: '3'
+services:
+
+  # SOURCE : https://hub.docker.com/_/mariadb
+  mariadb:
+    image: mariadb
+    restart: always
+    networks:
+      - prestashop
+    ports:
+      - 3306:3306
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=prestashop
+      - MYSQL_ROOT_PASSWORD=mycustompassword
+
+  # SOURCE : myself-DOCKERFILE
+  prestashop:
+    container_name: myContainerName
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    networks:
+      - prestashop
+    ports:
+      - 8080:80
+    links:
+      - mariadb:mariadb
+    depends_on:
+      - mariadb
+    volumes:
+      - ./:/var/www/html:rw
+      - ./modules:/var/www/html/modules
+      - ./themes:/var/www/html/themes
+      - ./override:/var/www/html/override
+    environment:
+      - PS_DEV_MODE=1
+      - PS_INSTALL_AUTO=0
+      - DB_NAME=prestashop
+      - DB_SERVER=mariadb
+      - DB_USER=root
+      - DB_PASSWD=mycustompassword
+
+  # SOURCE : https://hub.docker.com/_/phpmyadmin
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    networks:
+      - prestashop
+    links:
+      - mariadb:mariadb
+    ports:
+      - 8081:80
+    depends_on:
+      - mariadb
+    environment:
+      - PMA_HOST=mariadb
+      - PMA_USER=root
+      - PMA_PASSWORD=mycustompassword
+
+networks:
+  prestashop:
+
+volumes:
+  db_data:
